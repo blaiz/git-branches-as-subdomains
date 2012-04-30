@@ -1,0 +1,5 @@
+UseCanonicalName off
+<VirtualHost *:80>
+  ServerName *
+  VirtualDocumentRoot /web/%3/%2/domain/%1/
+</VirtualHost>

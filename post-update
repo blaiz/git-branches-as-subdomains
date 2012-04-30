@@ -1,0 +1,27 @@
+#!/bin/bash
+ORIGIN=`pwd` # origin repo
+ROOT=`echo ${ORIGIN} | sed 's|/git/|/web/|' | sed 's|\.git$||'` # root of branches repo
+BRANCH=`expr ${1} : '.*/.*/\(.*\)'` # name of the branch
+if ! [ -d ${ROOT}/${BRANCH} ]; then
+  echo "***** New branch detected, will create the appropriate repository *****"
+  mkdir -p ${ROOT} # create the file structure, in case it doesnt exist
+  cd ${ROOT}
+  unset GIT_DIR
+  # create new repo for branch
+  git clone --branch ${BRANCH} ${ORIGIN} ${BRANCH}
+  # copy post-commit hook that auto-pushes any commit to origin
+  cp ${ORIGIN}/hooks/post-commit.web-repos.sample ${BRANCH}/.git/hooks/post-commit
+  echo "***** Repository created for new branch: ${BRANCH} *****"
+else
+  cd ${ROOT}/${BRANCH}
+  unset GIT_DIR
+  if git pull origin ${BRANCH} &> /dev/null; then
+    # try to pull, if it works, the branch is updated
+    echo "***** Updated branch: ${BRANCH} *****"
+    exec git update-server-info
+  else
+    # if the pull doesnt work, assume the branch has been deleted
+    echo "***** Deleting branch: ${BRANCH} *****"
+    rm -Rf ${ROOT}/${BRANCH} # deleting the branch folder
+  fi
+fi

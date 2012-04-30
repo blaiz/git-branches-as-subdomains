@@ -1,0 +1,5 @@
+#!/bin/sh
+
+echo "***** Pushing changes to origin *****"
+
+git push origin

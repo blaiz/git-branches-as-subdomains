@@ -1,0 +1,36 @@
+UseCanonicalName off
+<VirtualHost *:80>
+  ServerName *
+  
+  RewriteEngine on
+  RewriteMap lowercase int:tolower
+
+  # check the hostname is right so that the RewriteRule works
+  RewriteCond ${lowercase:%{SERVER_NAME}} ([a-z0-9-]\.)*(preview\.)?([a-z0-9-]\.)?[a-z0-9-]+\.[a-z-]+$
+
+  # concatenate the virtual host name onto the start of the URI
+  # the [C] means do the next rewrite on the result of this one
+  RewriteRule ^(.+) ${lowercase:%{SERVER_NAME}}$1 [C]
+
+  # now create the real file name
+  RewriteCond ${lowercase:%{SERVER_NAME}} ([a-z0-9-]\.)*(preview\.)?([a-z0-9-]\.)?[a-z0-9-]+\.[a-z-]+$
+  RewriteRule ^([a-z0-9-]+)\.preview\.([a-z0-9-]+)\.([a-z-]+)/(.*) /web/$3/$2/$1/domain/_/$4
+  RewriteRule ^([a-z0-9-]+\.)*([a-z0-9-]+)\.([a-z0-9-]+)\.preview\.([a-z0-9-]+)\.([a-z-]+)/(.*) /web/$5/$4/$3/domain/$1$2/$6
+  RewriteRule ^([a-z0-9-]+)\.([a-z-]+)/(.*) /web/$2/$1/master/domain/_/$3
+  RewriteRule ^([a-z0-9-]+\.)*([a-z0-9-]+)\.([a-z0-9-]+)\.([a-z-]+)/(.*) /web/$4/$3/master/domain/$1$2/$5
+</VirtualHost>
+
+# exempt master branches from authentication since they show the live website
+<DirectoryMatch "^/web/[a-z-]+/[a-z0-9-]+/master/([a-z0-9-]+\.)*[a-z0-9-]+/">
+  Satisfy Any
+  Allow from all
+</DirectoryMatch>
+
+# all development branches should be protected by HTTP authentication
+# to avoid spying and search engine crawling
+<Directory /web/>
+  AuthType Basic
+  AuthName "Restricted Files"
+  AuthUserFile /web/.htpasswd
+  Require valid-user
+</Directory>
